@@ -3,12 +3,8 @@ package controllers
 
 import (
 	"flight-details/services"
+	"net/http"
 )
-
-// FlightController handles flight search
-// type FlightController struct {
-// 	web.Controller
-// }
 
 // @Summary Search Flights
 // @Description Searches for flights based on provided filters
@@ -48,21 +44,35 @@ import (
 // @Failure 400 {object} map[string]interface{}
 // @Router /v1/api/flights/all_params/search [get]
 func (c *FlightController) GetByAllParams() {
-	// 1) Parse incoming query parameters
-	params, err := parseFlightSearchRequest(c)
+	if c.Data == nil {
+		c.Data = make(map[interface{}]interface{})
+	}
+
+	// Parse incoming query parameters
+	params, err := ParseFlightSearchRequest(c)
 	if err != nil {
-		c.CustomAbort(400, err.Error()) // Return bad request if validation fails
+		c.Data["json"] = map[string]interface{}{
+			"status":  "error",
+			"message": err.Error(),
+		}
+		c.Ctx.Output.SetStatus(http.StatusBadRequest) // ✅ Return `400 Bad Request`
+		c.ServeJSON()
 		return
 	}
 
-	// 2) Call the service layer to get flight data
+	// Call the service layer to get flight data
 	result, err := services.SearchFlights(params)
 	if err != nil {
-		c.CustomAbort(500, "Error fetching flight data: "+err.Error())
+		c.Data["json"] = map[string]interface{}{
+			"status":  "error",
+			"message": "Error fetching flight data: " + err.Error(),
+		}
+		c.Ctx.Output.SetStatus(http.StatusInternalServerError) // ✅ Return `500 Internal Server Error`
+		c.ServeJSON()
 		return
 	}
 
-	// 3) Format and return success response
-	c.Data["json"] = formatSuccessResponse(result)
+	// Format and return success response
+	c.Data["json"] = FormatSuccessResponse(result)
 	c.ServeJSON()
 }

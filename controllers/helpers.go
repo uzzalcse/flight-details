@@ -11,7 +11,10 @@ import (
 )
 
 // parseFlightSearchRequest extracts parameters from the request context
-func parseFlightSearchRequest(c *FlightController) (structs.FlightSearchParams, error) {
+func ParseFlightSearchRequest(c *FlightController) (structs.FlightSearchParams, error) {
+	if c.Data == nil {
+		c.Data = make(map[interface{}]interface{})
+	}
 	ctx := c.Ctx
 	params := structs.FlightSearchParams{
 		FlightNum:         ctx.Input.Query("FlightNum"),
@@ -22,7 +25,7 @@ func parseFlightSearchRequest(c *FlightController) (structs.FlightSearchParams, 
 		Dest:              ctx.Input.Query("Dest"),
 		FlightDelayType:   ctx.Input.Query("FlightDelayType"),
 		OriginCountry:     ctx.Input.Query("OriginCountry"),
-		DayOfWeek:         parseInt(ctx.Input.Query("dayOfWeek")),
+		DayOfWeek:         ParseInt(ctx.Input.Query("dayOfWeek")),
 		TravelTime:        ctx.Input.Query("timestamp"), // Mandatory field
 		DestLocationLat:   ctx.Input.Query("DestLocationLat"),
 		DestLocationLon:   ctx.Input.Query("DestLocationLon"),
@@ -35,17 +38,17 @@ func parseFlightSearchRequest(c *FlightController) (structs.FlightSearchParams, 
 		OriginAirportID:   ctx.Input.Query("OriginAirportID"),
 		OriginRegion:      ctx.Input.Query("OriginRegion"),
 		DestCityName:      ctx.Input.Query("DestCityName"),
-		FlightDelayMin:    parseInt(ctx.Input.Query("FlightDelayMin")),
-		Cancelled:         parseBool(ctx.Input.Query("Cancelled")),
-		FlightDelay:       parseBool(ctx.Input.Query("FlightDelay")),
+		FlightDelayMin:    ParseInt(ctx.Input.Query("FlightDelayMin")),
+		Cancelled:         ParseBool(ctx.Input.Query("Cancelled")),
+		FlightDelay:       ParseBool(ctx.Input.Query("FlightDelay")),
 	}
 
 	// Parse float values
-	params.AvgTicketPrice = parseFloat(ctx.Input.Query("AvgTicketPrice"))
-	params.DistanceMiles = parseFloat(ctx.Input.Query("DistanceMiles"))
-	params.DistanceKilometers = parseFloat(ctx.Input.Query("DistanceKilometers"))
-	params.FlightTimeMin = parseFloat(ctx.Input.Query("FlightTimeMin"))
-	params.FlightTimeHour = parseFloat(ctx.Input.Query("FlightTimeHour"))
+	params.AvgTicketPrice = ParseFloat(ctx.Input.Query("AvgTicketPrice"))
+	params.DistanceMiles = ParseFloat(ctx.Input.Query("DistanceMiles"))
+	params.DistanceKilometers = ParseFloat(ctx.Input.Query("DistanceKilometers"))
+	params.FlightTimeMin = ParseFloat(ctx.Input.Query("FlightTimeMin"))
+	params.FlightTimeHour = ParseFloat(ctx.Input.Query("FlightTimeHour"))
 
 	fmt.Println(params.TravelTime)
 
@@ -58,7 +61,7 @@ func parseFlightSearchRequest(c *FlightController) (structs.FlightSearchParams, 
 }
 
 // formatSuccessResponse builds a consistent JSON success structure
-func formatSuccessResponse(data string) map[string]interface{} {
+func FormatSuccessResponse(data string) map[string]interface{} {
 	var parsedBody map[string]interface{}
 	if err := json.Unmarshal([]byte(data), &parsedBody); err != nil {
 		log.Println("Error formatting response:", err)
@@ -67,6 +70,11 @@ func formatSuccessResponse(data string) map[string]interface{} {
 			"message": "Response parsing failed",
 		}
 	}
+
+	if _, exists := parsedBody["status"]; exists {
+		return parsedBody
+	}
+
 	return map[string]interface{}{
 		"status": "success",
 		"data":   parsedBody,
@@ -74,7 +82,7 @@ func formatSuccessResponse(data string) map[string]interface{} {
 }
 
 // Helper parse functions for query params
-func parseFloat(value string) float64 {
+func ParseFloat(value string) float64 {
 	if value == "" {
 		return 0
 	}
@@ -82,7 +90,7 @@ func parseFloat(value string) float64 {
 	return v
 }
 
-func parseInt(value string) int {
+func ParseInt(value string) int {
 	if value == "" {
 		return 0
 	}
@@ -90,6 +98,6 @@ func parseInt(value string) int {
 	return v
 }
 
-func parseBool(value string) bool {
+func ParseBool(value string) bool {
 	return value == "true" || value == "1"
 }
