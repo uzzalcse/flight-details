@@ -1,0 +1,31 @@
+info:
+  contact: {}
+paths:
+  /v1/api/{id}:
+    get:
+      description: Fetch flight details by flight ID
+      parameters:
+      - description: Flight ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Example failure response
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request - Flight ID is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error - Failed to fetch flight details
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+swagger: "2.0"
