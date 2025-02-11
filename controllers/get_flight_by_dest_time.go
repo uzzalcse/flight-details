@@ -19,7 +19,7 @@ type FlightController struct {
 // @Success 200 {array} map[string]interface{}  "List of flights"
 // @Failure 400 {object} map[string]interface{} "Bad request - Invalid parameters"
 // @Failure 500 {object} map[string]interface{}  "Internal server error"
-// @Router /api/v1/flights/dest_time/search [get]  // Corrected route
+// @Router /v1/api/flights/dest_time/search [get]  // Corrected route
 func (c *FlightController) Get() {
 	destination := c.GetString("DestCityName") 
 	date := c.GetString("timestamp")          
