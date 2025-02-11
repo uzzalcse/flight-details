@@ -12,7 +12,7 @@ func init() {
 		web.NSNamespace("/flights",
 			web.NSRouter("all_params/search", &controllers.FlightController{}, "get:GetByAllParams"),
 			web.NSRouter("/:id", &controllers.FlightController{}, "get:GetFlightDetails"),
-      web.NSRouter("/dest_time/search", &controllers.FlightController{}, "get:Get"), 
+			web.NSRouter("/dest_time/search", &controllers.FlightController{}, "get:Get"),
 		),
 	)
 
