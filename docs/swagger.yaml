@@ -167,4 +167,43 @@ paths:
       summary: Search Flights
       tags:
       - Flights
+  /v1/api/flights/dest_time/search:
+    get:
+      consumes:
+      - application/json
+      description: Search for available flights based on destination and date
+      parameters:
+      - description: Destination city name
+        in: query
+        name: DestCityName
+        required: true
+        type: string
+      - description: Flight date
+        in: query
+        name: timestamp
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of flights
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Bad request - Invalid parameters
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search for flights
+      tags:
+      - Flights
 swagger: "2.0"

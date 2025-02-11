@@ -1,13 +1,12 @@
 package controllers
 
 import (
-	"github.com/beego/beego/v2/server/web"
-	"flight_api/services"
+	"flight-details/services"
 )
 
-type FlightController struct {
-	web.Controller
-}
+// type FlightController struct {
+// 	web.Controller
+// }
 
 // @Summary Search for flights
 // @Description Search for available flights based on destination and date
@@ -21,9 +20,9 @@ type FlightController struct {
 // @Failure 500 {object} map[string]interface{}  "Internal server error"
 // @Router /v1/api/flights/dest_time/search [get]  // Corrected route
 func (c *FlightController) Get() {
-	destination := c.GetString("DestCityName") 
-	date := c.GetString("timestamp")          
-	flights, err := services.SearchFlights(destination, date)
+	destination := c.GetString("DestCityName")
+	date := c.GetString("timestamp")
+	flights, err := services.SearchFlightDetails(destination, date)
 	if err != nil {
 		c.Ctx.Output.SetStatus(500)
 		c.Data["json"] = map[string]string{"error": err.Error()}

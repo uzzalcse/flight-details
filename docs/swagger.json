@@ -212,6 +212,63 @@
                 }
             }
         },
+        "/v1/api/flights/dest_time/search": {
+            "get": {
+                "description": "Search for available flights based on destination and date",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flights"
+                ],
+                "summary": "Search for flights",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Destination city name",
+                        "name": "DestCityName",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Flight date",
+                        "name": "timestamp",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of flights",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid parameters",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
         "/v1/api/flights/{id}": {
             "get": {
                 "description": "Fetch flight details by flight ID",
