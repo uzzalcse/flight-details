@@ -1,18 +1,21 @@
 package routers
 
 import (
-	"flight-details/controllers"
-	beego "github.com/beego/beego/v2/server/web"
+	"flight_api/controllers"
+
+	"github.com/beego/beego/v2/server/web"
 )
 
 func init() {
-	ns := beego.NewNamespace("/v1",
-		beego.NSNamespace("/api",
-			beego.NSRouter("/:id", &controllers.FlightController{}, "get:GetFlightDetails"),
+	// Define the API namespace
+	ns := web.NewNamespace("/api/v1",
+		web.NSNamespace("/flights",
+			web.NSRouter("all_params/search", &controllers.FlightController{}, "get:GetByAllParams"),
+      web.NSRouter("/:id", &controllers.FlightController{}, "get:GetFlightDetails"),
 		),
-
 	)
 
-	beego.AddNamespace(ns)
-	beego.Router("/swagger/*", &controllers.SwaggerController{})
+	// Register the namespace
+	web.AddNamespace(ns)
+  beego.Router("/swagger/*", &controllers.SwaggerController{})
 }
