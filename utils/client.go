@@ -23,7 +23,7 @@ func GetElasticClient() *ESClient {
 	if err != nil {
 		log.Fatalf("Error getting elasticsearch API key: %s", err)
 	}
-	ES_ADDRESS, err := web.AppConfig.String("ES_LOCAL_ADDRESS")
+	ES_ADDRESS, err := web.AppConfig.String("ES_LOCAL_URL")
 	if err != nil {
 		log.Fatalf("Error getting elasticsearch address: %s", err)
 	}

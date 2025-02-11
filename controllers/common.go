@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"flight_api/utils"
+	"flight-details/utils"
 )
 
 var Client *utils.ESClient
