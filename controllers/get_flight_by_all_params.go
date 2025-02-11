@@ -2,15 +2,13 @@
 package controllers
 
 import (
-	"flight_api/services"
-
-	"github.com/beego/beego/v2/server/web"
+	"flight-details/services"
 )
 
 // FlightController handles flight search
-type FlightController struct {
-	web.Controller
-}
+// type FlightController struct {
+// 	web.Controller
+// }
 
 // @Summary Search Flights
 // @Description Searches for flights based on provided filters
@@ -48,7 +46,7 @@ type FlightController struct {
 // @Param FlightDelayMin query integer false "Flight Delay in Minutes"
 // @Success 200 {object} map[string]interface{}
 // @Failure 400 {object} map[string]interface{}
-// @Router /api/v1/flights/search [get]
+// @Router /v1/api/flights/all_params/search [get]
 func (c *FlightController) GetByAllParams() {
 	// 1) Parse incoming query parameters
 	params, err := parseFlightSearchRequest(c)

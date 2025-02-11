@@ -15,7 +15,215 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/api/{id}": {
+        "/v1/api/flights/all_params/search": {
+            "get": {
+                "description": "Searches for flights based on provided filters",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Flights"
+                ],
+                "summary": "Search Flights",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Flight departure timestamp (ISO format)",
+                        "name": "timestamp",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Flight Number",
+                        "name": "FlightNum",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination Country",
+                        "name": "DestCountry",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin Weather Condition",
+                        "name": "OriginWeather",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin City Name",
+                        "name": "OriginCityName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Average Ticket Price",
+                        "name": "AvgTicketPrice",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Flight Distance in Miles",
+                        "name": "DistanceMiles",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Whether the flight was delayed",
+                        "name": "FlightDelay",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination Weather Condition",
+                        "name": "DestWeather",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination Airport Name",
+                        "name": "Dest",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Type of Flight Delay",
+                        "name": "FlightDelayType",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin Country",
+                        "name": "OriginCountry",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Day of the week (0-6)",
+                        "name": "dayOfWeek",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Flight Distance in Kilometers",
+                        "name": "DistanceKilometers",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination Location Latitude",
+                        "name": "DestLocationLat",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination Location Longitude",
+                        "name": "DestLocationLon",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination Airport ID",
+                        "name": "DestAirportID",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Airline Carrier",
+                        "name": "Carrier",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "description": "Whether the flight was canceled",
+                        "name": "Cancelled",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Flight Duration in Minutes",
+                        "name": "FlightTimeMin",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin Airport Name",
+                        "name": "Origin",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin Location Latitude",
+                        "name": "OriginLocationLat",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin Location Longitude",
+                        "name": "OriginLocationLon",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination Region",
+                        "name": "DestRegion",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin Airport ID",
+                        "name": "OriginAirportID",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Origin Region",
+                        "name": "OriginRegion",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Destination City Name",
+                        "name": "DestCityName",
+                        "in": "query"
+                    },
+                    {
+                        "type": "number",
+                        "description": "Flight Duration in Hours",
+                        "name": "FlightTimeHour",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Flight Delay in Minutes",
+                        "name": "FlightDelayMin",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/api/flights/{id}": {
             "get": {
                 "description": "Fetch flight details by flight ID",
                 "parameters": [

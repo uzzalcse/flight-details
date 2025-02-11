@@ -3,10 +3,11 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 
-	"flight_api/structs"
+	"flight-details/structs"
 )
 
 // parseFlightSearchRequest extracts parameters from the request context
@@ -45,6 +46,8 @@ func parseFlightSearchRequest(c *FlightController) (structs.FlightSearchParams, 
 	params.DistanceKilometers = parseFloat(ctx.Input.Query("DistanceKilometers"))
 	params.FlightTimeMin = parseFloat(ctx.Input.Query("FlightTimeMin"))
 	params.FlightTimeHour = parseFloat(ctx.Input.Query("FlightTimeHour"))
+
+	fmt.Println(params.TravelTime)
 
 	// The "timestamp" (TravelTime) is required
 	if params.TravelTime == "" {
