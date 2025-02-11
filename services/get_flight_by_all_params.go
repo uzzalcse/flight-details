@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"log"
 
-	"flight_api/structs"
-	"flight_api/utils"
+	"flight-details/structs"
+	"flight-details/utils"
 
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 )
