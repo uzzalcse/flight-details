@@ -20,6 +20,22 @@ cd flight-details
 ```bash
 go mod tidy
 ```
+4. Set up configuration.
+- Create `app.conf` file inside ***conf*** directory.
+```bash
+touch conf/app.conf
+```
+- Copy the variables from **app.conf.sample** and enter your configurations. Example is provided below.
+```bash
+appname = flight-api
+httpport = 8080
+runmode = dev
+autorender = false
+copyrequestbody = true
+EnableDocs = true
+ES_LOCAL_API_KEY=QnZnMjdwUUJfZXVoNWRBbE1MaTg6c19PM0hWUVFRay1QM0QyLXNuWE1fZw==
+ES_LOCAL_URL=http://elasticsearch:9200
+```
 
 ## Running the Application
 
