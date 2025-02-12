@@ -2,9 +2,11 @@ package services
 
 import (
     "encoding/json"
+    "errors"
     "flight_api/structs"
     "flight_api/utils"
     "fmt"
+    "regexp"
 )
 
 // QueryBuilder handles the construction of Elasticsearch queries
@@ -68,7 +70,18 @@ type SearchResult struct {
 }
 
 // SearchFlights searches for flights using the modular query builder
-func SearchFlights(destination, date string) ([]structs.FlightSearchParams, error) {
+func SearchFlightDetails(destination, date string) ([]structs.FlightSearchParams, error) {
+    // Validate destination (should not be empty)
+    if destination == "" {
+        return nil, errors.New("destination city name is required")
+    }
+
+    // Validate timestamp format (ISO 8601 format: YYYY-MM-DDTHH:MM:SS)
+    match, _ := regexp.MatchString(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$`, date)
+    if !match {
+        return nil, errors.New("invalid timestamp format. Expected format: YYYY-MM-DDTHH:MM:SS")
+    }
+
     esClient := utils.GetElasticClient()
     queryBuilder := NewQueryBuilder()
 

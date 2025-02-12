@@ -169,20 +169,20 @@ func TestFlightController_Get_MissingParameters(t *testing.T) {
         {
             name:           "Missing DestCityName",
             url:            "/v1/api/flights/dest_time/search?timestamp=2025-02-03T10:33:28",
-            expectedStatus: http.StatusInternalServerError, 
-            expectedError:  "error executing search: error performing search: unsupported protocol scheme \"\"",
+            expectedStatus: http.StatusBadRequest, 
+            expectedError:  "Destination city name is required",
         },
         {
             name:           "Missing timestamp",
             url:            "/v1/api/flights/dest_time/search?DestCityName=Treviso",
-            expectedStatus: http.StatusInternalServerError, 
-            expectedError:  "error executing search: error performing search: unsupported protocol scheme \"\"",
+            expectedStatus: http.StatusBadRequest, 
+            expectedError:  "Invalid timestamp format. Expected format: YYYY-MM-DDTHH:MM:SS",
         },
         {
             name:           "Missing both parameters",
             url:            "/v1/api/flights/dest_time/search",
-            expectedStatus: http.StatusInternalServerError, 
-            expectedError:  "error executing search: error performing search: unsupported protocol scheme \"\"",
+            expectedStatus: http.StatusBadRequest, 
+            expectedError:  "Destination city name is required",
         },
     }
 
@@ -194,12 +194,12 @@ func TestFlightController_Get_MissingParameters(t *testing.T) {
             flightController := &controllers.FlightController{}
             ctx := context.NewContext()
             ctx.Reset(w, req)
-            
+
             ctx.Input = &context.BeegoInput{
                 Context: ctx,
                 RequestBody: []byte{},
             }
-            
+
             ctx.Output = &context.BeegoOutput{
                 Context: ctx,
             }
@@ -210,7 +210,7 @@ func TestFlightController_Get_MissingParameters(t *testing.T) {
             assert.Equal(t, tc.expectedStatus, w.Code, "Expected status %d but got %d", tc.expectedStatus, w.Code)
 
             // Parse JSON response
-            var response map[string]interface{}
+            var response map[string]string
             err := json.Unmarshal(w.Body.Bytes(), &response)
             assert.Nil(t, err, "Expected valid JSON response but got error %v", err)
 
