@@ -63,7 +63,7 @@ func TestSearchFlights_Success(t *testing.T) {
         return mockElasticResponse, nil
     })
 
-    flights, err := services.SearchFlights("Treviso", "2025-02-03T10:33:28")
+    flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
     assert.Nil(t, err, "Expected no error, but got: %v", err)
     assert.NotNil(t, flights, "Expected flights to not be nil")
@@ -83,7 +83,7 @@ func TestSearchFlights_ExecutionError(t *testing.T) {
         return nil, errors.New("Elasticsearch execution error")
     })
 
-    flights, err := services.SearchFlights("Treviso", "2025-02-03T10:33:28")
+    flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
     assert.NotNil(t, err, "Expected an error but got nil")
     assert.Contains(t, err.Error(), "error executing search", "Error message mismatch")
@@ -103,7 +103,7 @@ func TestSearchFlights_InvalidJSONResponse(t *testing.T) {
             return nil, errors.New("invalid JSON response")
         })
 
-    flights, err := services.SearchFlights("Treviso", "2025-02-03T10:33:28")
+    flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
     assert.NotNil(t, err, "Expected an error but got nil")
     assert.Contains(t, err.Error(), "invalid JSON response", "Error message mismatch")
