@@ -1,0 +1,57 @@
+
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "8000:8000"  # Bee debugging port
+    depends_on:
+      - elasticsearch
+    environment:
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - BEE_WATCH=1  # Enable Bee hot reload
+    volumes:
+      - .:/app
+      - go-modules:/go/pkg/mod  # Persist Go modules cache
+    networks:
+      - app-network
+    command: bee run  # Use Bee for development
+
+  elasticsearch:
+    image: elasticsearch:8.17.0  # Match Kibana version
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+    ports:
+      - "9200:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 10s
+      retries: 5
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.17.0  # Ensure the version matches Elasticsearch
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200  # Fixed variable name
+      - KIBANA_ENCRYPTION_KEY=VKLC5lSbqSCaqAtpAfhN8oGX4SeHIVni
+      - XPACK_SECURITY_ENABLED=false  # Disable security if needed
+    ports:
+      - "5601:5601"  # Kibana UI port
+    networks:
+      - app-network
+
+volumes:
+  elasticsearch-data:
+  go-modules:  # Volume for Go modules cache
+
+networks:
+  app-network:
+    driver: bridge

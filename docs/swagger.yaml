@@ -1,0 +1,211 @@
+info:
+  contact: {}
+paths:
+  /v1/api/flights/{id}:
+    get:
+      description: Fetch flight details by flight ID
+      parameters:
+      - description: Flight ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Example failure response
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request - Flight ID is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error - Failed to fetch flight details
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      tags:
+      - Flights
+  /v1/api/flights/all_params/search:
+    get:
+      consumes:
+      - application/json
+      description: Searches for flights based on provided filters
+      parameters:
+      - description: Flight departure timestamp (ISO format)
+        in: query
+        name: timestamp
+        required: true
+        type: string
+      - description: Flight Number
+        in: query
+        name: FlightNum
+        type: string
+      - description: Destination Country
+        in: query
+        name: DestCountry
+        type: string
+      - description: Origin Weather Condition
+        in: query
+        name: OriginWeather
+        type: string
+      - description: Origin City Name
+        in: query
+        name: OriginCityName
+        type: string
+      - description: Average Ticket Price
+        in: query
+        name: AvgTicketPrice
+        type: number
+      - description: Flight Distance in Miles
+        in: query
+        name: DistanceMiles
+        type: number
+      - description: Whether the flight was delayed
+        in: query
+        name: FlightDelay
+        type: boolean
+      - description: Destination Weather Condition
+        in: query
+        name: DestWeather
+        type: string
+      - description: Destination Airport Name
+        in: query
+        name: Dest
+        type: string
+      - description: Type of Flight Delay
+        in: query
+        name: FlightDelayType
+        type: string
+      - description: Origin Country
+        in: query
+        name: OriginCountry
+        type: string
+      - description: Day of the week (0-6)
+        in: query
+        name: dayOfWeek
+        type: integer
+      - description: Flight Distance in Kilometers
+        in: query
+        name: DistanceKilometers
+        type: number
+      - description: Destination Location Latitude
+        in: query
+        name: DestLocationLat
+        type: string
+      - description: Destination Location Longitude
+        in: query
+        name: DestLocationLon
+        type: string
+      - description: Destination Airport ID
+        in: query
+        name: DestAirportID
+        type: string
+      - description: Airline Carrier
+        in: query
+        name: Carrier
+        type: string
+      - description: Whether the flight was canceled
+        in: query
+        name: Cancelled
+        type: boolean
+      - description: Flight Duration in Minutes
+        in: query
+        name: FlightTimeMin
+        type: number
+      - description: Origin Airport Name
+        in: query
+        name: Origin
+        type: string
+      - description: Origin Location Latitude
+        in: query
+        name: OriginLocationLat
+        type: string
+      - description: Origin Location Longitude
+        in: query
+        name: OriginLocationLon
+        type: string
+      - description: Destination Region
+        in: query
+        name: DestRegion
+        type: string
+      - description: Origin Airport ID
+        in: query
+        name: OriginAirportID
+        type: string
+      - description: Origin Region
+        in: query
+        name: OriginRegion
+        type: string
+      - description: Destination City Name
+        in: query
+        name: DestCityName
+        type: string
+      - description: Flight Duration in Hours
+        in: query
+        name: FlightTimeHour
+        type: number
+      - description: Flight Delay in Minutes
+        in: query
+        name: FlightDelayMin
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search Flights
+      tags:
+      - Flights
+  /v1/api/flights/dest_time/search:
+    get:
+      consumes:
+      - application/json
+      description: Search for available flights based on destination and date
+      parameters:
+      - description: Destination city name
+        in: query
+        name: DestCityName
+        required: true
+        type: string
+      - description: Flight date
+        in: query
+        name: timestamp
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of flights
+          schema:
+            items:
+              additionalProperties: true
+              type: object
+            type: array
+        "400":
+          description: Bad request - Invalid parameters
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Search for flights
+      tags:
+      - Flights
+swagger: "2.0"
