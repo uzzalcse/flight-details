@@ -1,15 +1,10 @@
 package controllers
 
 import (
-	"github.com/beego/beego/v2/server/web"
-	"flight_api/services"
+	"flight-details/services"
 	"net/http"
 	"regexp"
 )
-
-type FlightController struct {
-	web.Controller
-}
 
 // @Summary Search for flights
 // @Description Search for available flights based on destination and date
