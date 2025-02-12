@@ -49,3 +49,4 @@ swag init
 - Go
 - Beego Framework
 - Swagger UI
+- Elasticsearch
