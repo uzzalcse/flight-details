@@ -15,46 +15,81 @@ func ParseFlightSearchRequest(c *FlightController) (structs.FlightSearchParams, 
 	if c.Data == nil {
 		c.Data = make(map[interface{}]interface{})
 	}
+
 	ctx := c.Ctx
+	var err error
 	params := structs.FlightSearchParams{
-		FlightNum:         ctx.Input.Query("FlightNum"),
-		DestCountry:       ctx.Input.Query("DestCountry"),
-		OriginWeather:     ctx.Input.Query("OriginWeather"),
-		OriginCityName:    ctx.Input.Query("OriginCityName"),
-		DestWeather:       ctx.Input.Query("DestWeather"),
-		Dest:              ctx.Input.Query("Dest"),
-		FlightDelayType:   ctx.Input.Query("FlightDelayType"),
-		OriginCountry:     ctx.Input.Query("OriginCountry"),
-		DayOfWeek:         ParseInt(ctx.Input.Query("dayOfWeek")),
-		TravelTime:        ctx.Input.Query("timestamp"), // Mandatory field
-		DestLocationLat:   ctx.Input.Query("DestLocationLat"),
-		DestLocationLon:   ctx.Input.Query("DestLocationLon"),
-		DestAirportID:     ctx.Input.Query("DestAirportID"),
-		Carrier:           ctx.Input.Query("Carrier"),
-		Origin:            ctx.Input.Query("Origin"),
-		OriginLocationLat: ctx.Input.Query("OriginLocationLat"),
-		OriginLocationLon: ctx.Input.Query("OriginLocationLon"),
-		DestRegion:        ctx.Input.Query("DestRegion"),
-		OriginAirportID:   ctx.Input.Query("OriginAirportID"),
-		OriginRegion:      ctx.Input.Query("OriginRegion"),
-		DestCityName:      ctx.Input.Query("DestCityName"),
-		FlightDelayMin:    ParseInt(ctx.Input.Query("FlightDelayMin")),
-		Cancelled:         ParseBool(ctx.Input.Query("Cancelled")),
-		FlightDelay:       ParseBool(ctx.Input.Query("FlightDelay")),
+		FlightNum:       ctx.Input.Query("FlightNum"),
+		DestCountry:     ctx.Input.Query("DestCountry"),
+		OriginWeather:   ctx.Input.Query("OriginWeather"),
+		OriginCityName:  ctx.Input.Query("OriginCityName"),
+		DestWeather:     ctx.Input.Query("DestWeather"),
+		Dest:            ctx.Input.Query("Dest"),
+		FlightDelayType: ctx.Input.Query("FlightDelayType"),
+		OriginCountry:   ctx.Input.Query("OriginCountry"),
+		TravelTime:      ctx.Input.Query("timestamp"), // Mandatory field
+		DestLocationLat: ctx.Input.Query("DestLocationLat"),
+		DestLocationLon: ctx.Input.Query("DestLocationLon"),
+		DestAirportID:   ctx.Input.Query("DestAirportID"),
+		Carrier:         ctx.Input.Query("Carrier"),
+		Origin:          ctx.Input.Query("Origin"),
+		DestRegion:      ctx.Input.Query("DestRegion"),
+		OriginAirportID: ctx.Input.Query("OriginAirportID"),
+		OriginRegion:    ctx.Input.Query("OriginRegion"),
+		DestCityName:    ctx.Input.Query("DestCityName"),
 	}
 
-	// Parse float values
-	params.AvgTicketPrice = ParseFloat(ctx.Input.Query("AvgTicketPrice"))
-	params.DistanceMiles = ParseFloat(ctx.Input.Query("DistanceMiles"))
-	params.DistanceKilometers = ParseFloat(ctx.Input.Query("DistanceKilometers"))
-	params.FlightTimeMin = ParseFloat(ctx.Input.Query("FlightTimeMin"))
-	params.FlightTimeHour = ParseFloat(ctx.Input.Query("FlightTimeHour"))
-
-	fmt.Println(params.TravelTime)
-
-	// The "timestamp" (TravelTime) is required
+	// Mandatory timestamp check
 	if params.TravelTime == "" {
 		return params, errors.New("timestamp (TravelTime) is required")
+	}
+
+	// Parse integer values with validation
+	params.DayOfWeek, err = ParseInt(ctx.Input.Query("dayOfWeek"))
+	if err != nil || params.DayOfWeek < 0 || params.DayOfWeek > 6 {
+		return params, fmt.Errorf("invalid dayOfWeek: must be between 0 and 6")
+	}
+
+	params.FlightDelayMin, err = ParseInt(ctx.Input.Query("FlightDelayMin"))
+	if err != nil {
+		return params, fmt.Errorf("invalid FlightDelayMin value: %v", err)
+	}
+
+	// Parse boolean values with error handling
+	params.Cancelled, err = ParseBool(ctx.Input.Query("Cancelled"))
+	if err != nil {
+		return params, fmt.Errorf("invalid Cancelled value: %v", err)
+	}
+
+	params.FlightDelay, err = ParseBool(ctx.Input.Query("FlightDelay"))
+	if err != nil {
+		return params, fmt.Errorf("invalid FlightDelay value: %v", err)
+	}
+
+	// Parse float values with error handling
+	params.AvgTicketPrice, err = ParseFloat(ctx.Input.Query("AvgTicketPrice"))
+	if err != nil {
+		return params, fmt.Errorf("invalid AvgTicketPrice value: %v", err)
+	}
+
+	params.DistanceMiles, err = ParseFloat(ctx.Input.Query("DistanceMiles"))
+	if err != nil {
+		return params, fmt.Errorf("invalid DistanceMiles value: %v", err)
+	}
+
+	params.DistanceKilometers, err = ParseFloat(ctx.Input.Query("DistanceKilometers"))
+	if err != nil {
+		return params, fmt.Errorf("invalid DistanceKilometers value: %v", err)
+	}
+
+	params.FlightTimeMin, err = ParseFloat(ctx.Input.Query("FlightTimeMin"))
+	if err != nil {
+		return params, fmt.Errorf("invalid FlightTimeMin value: %v", err)
+	}
+
+	params.FlightTimeHour, err = ParseFloat(ctx.Input.Query("FlightTimeHour"))
+	if err != nil {
+		return params, fmt.Errorf("invalid FlightTimeHour value: %v", err)
 	}
 
 	return params, nil
@@ -82,22 +117,36 @@ func FormatSuccessResponse(data string) map[string]interface{} {
 }
 
 // Helper parse functions for query params
-func ParseFloat(value string) float64 {
+func ParseFloat(value string) (float64, error) {
 	if value == "" {
-		return 0
+		return 0, nil
 	}
-	v, _ := strconv.ParseFloat(value, 64)
-	return v
+	v, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid float: %s", value)
+	}
+	return v, nil
 }
 
-func ParseInt(value string) int {
+func ParseInt(value string) (int, error) {
 	if value == "" {
-		return 0
+		return 0, nil
 	}
-	v, _ := strconv.Atoi(value)
-	return v
+	v, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("invalid integer: %s", value)
+	}
+	return v, nil
 }
 
-func ParseBool(value string) bool {
-	return value == "true" || value == "1"
+func ParseBool(value string) (bool, error) {
+	if value == "" { // Allow missing values to be treated as false
+		return false, nil
+	}
+	if value == "true" || value == "1" {
+		return true, nil
+	} else if value == "false" || value == "0" {
+		return false, nil
+	}
+	return false, fmt.Errorf("invalid boolean: %s", value)
 }
