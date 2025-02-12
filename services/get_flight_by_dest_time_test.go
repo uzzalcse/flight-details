@@ -2,8 +2,8 @@ package services_test
 
 import (
 	"errors"
-	"flight_api/services"
-	"flight_api/utils"
+	"flight-details/services"
+	"flight-details/utils"
 	"reflect"
 	"testing"
 

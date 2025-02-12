@@ -28,6 +28,8 @@ paths:
             additionalProperties:
               type: string
             type: object
+      tags:
+      - Flights
   /v1/api/flights/all_params/search:
     get:
       consumes:

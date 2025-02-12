@@ -24,6 +24,7 @@ func (f *FlightController) Init(ctx *beecontext.Context, controllerName, actionN
 // GetFlightDetails handles retrieving flight details from Elasticsearch
 // @Title Get Flight Details
 // @Description Fetch flight details by flight ID
+// @Tags Flights
 // @Param   id      path    string  true  "Flight ID"
 // @Success 200 {object} map[string]interface{} "Successful response"
 // @Success 200 {object} map[string]interface{} "Example success response"

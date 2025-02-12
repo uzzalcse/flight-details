@@ -283,6 +283,9 @@ const docTemplate = `{
         "/v1/api/flights/{id}": {
             "get": {
                 "description": "Fetch flight details by flight ID",
+                "tags": [
+                    "Flights"
+                ],
                 "parameters": [
                     {
                         "type": "string",
