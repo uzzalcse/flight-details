@@ -62,7 +62,7 @@ func TestSearchFlights_Success(t *testing.T) {
 		return mockElasticResponse, nil
 	})
 
-	flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
 	assert.Nil(t, err, "Expected no error, but got: %v", err)
 	assert.NotNil(t, flights, "Expected flights to not be nil")
@@ -82,7 +82,7 @@ func TestSearchFlights_ExecutionError(t *testing.T) {
 		return nil, errors.New("Elasticsearch execution error")
 	})
 
-	flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
 	assert.NotNil(t, err, "Expected an error but got nil")
 	assert.Contains(t, err.Error(), "error executing search", "Error message mismatch")
@@ -102,7 +102,7 @@ func TestSearchFlights_InvalidJSONResponse(t *testing.T) {
 			return nil, errors.New("invalid JSON response")
 		})
 
-	flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
 	assert.NotNil(t, err, "Expected an error but got nil")
 	assert.Contains(t, err.Error(), "invalid JSON response", "Error message mismatch")
@@ -110,7 +110,7 @@ func TestSearchFlights_InvalidJSONResponse(t *testing.T) {
 }
 
 func TestAddMatchQuery(t *testing.T) {
-	qb := services.NewQueryBuilder()
+	qb := NewQueryBuilder()
 	qb.AddMatchQuery("test_field", "test_value")
 
 	expectedQuery := map[string]interface{}{
@@ -132,7 +132,7 @@ func TestAddMatchQuery(t *testing.T) {
 }
 
 func TestSearchFlights_EmptyDestination(t *testing.T) {
-	flights, err := services.SearchFlightDetails("", "2025-02-03T10:33:28")
+	flights, err := SearchFlightDetails("", "2025-02-03T10:33:28")
 
 	assert.NotNil(t, err, "Expected an error for empty destination")
 	assert.Equal(t, "destination city name is required", err.Error(), "Error message mismatch")
@@ -140,7 +140,7 @@ func TestSearchFlights_EmptyDestination(t *testing.T) {
 }
 
 func TestSearchFlights_InvalidTimestampFormat(t *testing.T) {
-	flights, err := services.SearchFlightDetails("Treviso", "invalid-date")
+	flights, err := SearchFlightDetails("Treviso", "invalid-date")
 
 	assert.NotNil(t, err, "Expected an error for invalid timestamp format")
 	assert.Equal(t, "invalid timestamp format. Expected format: YYYY-MM-DDTHH:MM:SS", err.Error(), "Error message mismatch")
@@ -161,7 +161,7 @@ func TestSearchFlights_JSONMarshallingError(t *testing.T) {
 		}, nil
 	})
 
-	flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
 	assert.NotNil(t, err, "Expected an error for JSON marshalling failure")
 	assert.Contains(t, err.Error(), "error marshalling response", "Error message mismatch")
@@ -181,7 +181,7 @@ func TestSearchFlights_JSONUnmarshallingError(t *testing.T) {
 		}, nil
 	})
 
-	flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
 	assert.NotNil(t, err, "Expected an error for JSON unmarshalling failure")
 	assert.Contains(t, err.Error(), "error unmarshaling response", "Error message mismatch")
