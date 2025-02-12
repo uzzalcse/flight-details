@@ -3,6 +3,7 @@ module flight-details
 go 1.23
 
 require (
+	bou.ke/monkey v1.0.2
 	github.com/beego/beego/v2 v2.3.4
 	github.com/elastic/go-elasticsearch/v8 v8.17.0
 	github.com/stretchr/testify v1.9.0
