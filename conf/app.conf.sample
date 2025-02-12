@@ -1,0 +1,8 @@
+appname = XXXX
+httpport = XXXX
+runmode = XXXX
+autorender = XXXX
+copyrequestbody = XXXX
+EnableDocs = XXXX
+ES_LOCAL_API_KEY=XXXX
+ES_LOCAL_URL=XXXX
