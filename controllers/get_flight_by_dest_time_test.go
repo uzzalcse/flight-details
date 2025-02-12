@@ -51,7 +51,7 @@ func TestFlightController_Get(t *testing.T) {
     }
 
     // Monkey Patch `services.SearchFlights` to return mock data
-    monkey.Patch(services.SearchFlights, func(destination, date string) ([]structs.FlightSearchParams, error) {
+    monkey.Patch(services.SearchFlightDetails, func(destination, date string) ([]structs.FlightSearchParams, error) {
         return mockFlights, nil
     })
     defer monkey.UnpatchAll()
@@ -125,7 +125,7 @@ func TestFlightController_Get(t *testing.T) {
 
 
 func TestFlightController_Get_SearchError(t *testing.T) {
-    monkey.Patch(services.SearchFlights, func(destination, date string) ([]structs.FlightSearchParams, error) {
+    monkey.Patch(services.SearchFlightDetails, func(destination, date string) ([]structs.FlightSearchParams, error) {
         return nil, errors.New("search service error")
     })
     defer monkey.UnpatchAll()
