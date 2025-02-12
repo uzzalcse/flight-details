@@ -132,3 +132,61 @@ func TestAddMatchQuery(t *testing.T) {
 
     assert.Equal(t, expectedQuery, qb.Build(), "The query built does not match the expected output")
 }
+
+
+func TestSearchFlights_EmptyDestination(t *testing.T) {
+    flights, err := services.SearchFlightDetails("", "2025-02-03T10:33:28")
+
+    assert.NotNil(t, err, "Expected an error for empty destination")
+    assert.Equal(t, "destination city name is required", err.Error(), "Error message mismatch")
+    assert.Nil(t, flights, "Expected nil flights")
+}
+
+func TestSearchFlights_InvalidTimestampFormat(t *testing.T) {
+    flights, err := services.SearchFlightDetails("Treviso", "invalid-date")
+
+    assert.NotNil(t, err, "Expected an error for invalid timestamp format")
+    assert.Equal(t, "invalid timestamp format. Expected format: YYYY-MM-DDTHH:MM:SS", err.Error(), "Error message mismatch")
+    assert.Nil(t, flights, "Expected nil flights")
+}
+
+func TestSearchFlights_JSONMarshallingError(t *testing.T) {
+    // Patch GetElasticClient
+    monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
+        return &utils.ESClient{}
+    })
+    defer monkey.UnpatchAll()
+
+    // Patch ExecuteSearch to return an invalid type that causes JSON marshalling failure
+    monkey.PatchInstanceMethod(reflect.TypeOf((*utils.ESClient)(nil)), "ExecuteSearch", func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
+        return map[string]interface{}{
+            "invalid": make(chan int), // This will cause JSON marshalling to fail
+        }, nil
+    })
+
+    flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+
+    assert.NotNil(t, err, "Expected an error for JSON marshalling failure")
+    assert.Contains(t, err.Error(), "error marshalling response", "Error message mismatch")
+    assert.Nil(t, flights, "Expected nil flights")
+}
+
+func TestSearchFlights_JSONUnmarshallingError(t *testing.T) {
+    monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
+        return &utils.ESClient{}
+    })
+    defer monkey.UnpatchAll()
+
+    // Patch ExecuteSearch to return malformed JSON
+    monkey.PatchInstanceMethod(reflect.TypeOf((*utils.ESClient)(nil)), "ExecuteSearch", func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
+        return map[string]interface{}{
+            "hits": "invalid-json-format",
+        }, nil
+    })
+
+    flights, err := services.SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+
+    assert.NotNil(t, err, "Expected an error for JSON unmarshalling failure")
+    assert.Contains(t, err.Error(), "error unmarshaling response", "Error message mismatch")
+    assert.Nil(t, flights, "Expected nil flights")
+}
