@@ -39,9 +39,16 @@ ES_LOCAL_URL=http://elasticsearch:9200
 
 ## Running the Application
 
+### Using Docker
+```bash
+docker compose up --build
+```
+After running this command, swagger will be accessible at `localhost:8080/swagger/`.
+
+## Using Beego
 1. Start the server
 ```bash
-go run main.go
+bee run
 ```
 The server will start on `localhost:8080` by default.
 
