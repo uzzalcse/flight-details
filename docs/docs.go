@@ -267,14 +267,18 @@ const docTemplate = `{
                         "description": "Bad request - Invalid parameters",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     },
                     "500": {
                         "description": "Internal server error",
                         "schema": {
                             "type": "object",
-                            "additionalProperties": true
+                            "additionalProperties": {
+                                "type": "string"
+                            }
                         }
                     }
                 }

@@ -198,12 +198,14 @@ paths:
         "400":
           description: Bad request - Invalid parameters
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
         "500":
           description: Internal server error
           schema:
-            additionalProperties: true
+            additionalProperties:
+              type: string
             type: object
       summary: Search for flights
       tags:
