@@ -8,9 +8,9 @@ import (
     "github.com/stretchr/testify/assert"
     "testing"
 	"errors"
-    "flight_api/controllers"
-    "flight_api/services"
-    "flight_api/structs"
+    "flight-details/controllers"
+    "flight-details/services"
+    "flight-details/structs"
     "github.com/beego/beego/v2/server/web/context"
 )
 

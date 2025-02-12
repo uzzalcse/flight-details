@@ -1,24 +1,26 @@
+
 package routers
 
 import (
-    "flight_api/controllers"
-
-    "github.com/beego/beego/v2/server/web"
+	"flight-details/controllers"
+	"github.com/beego/beego/v2/server/web"
 )
 
-func init() {
-    // Initialize the Elasticsearch client (called once on app startup)
-    controllers.Init()
-
-    // Define the API namespace
-
-    ns := web.NewNamespace("/api/v1",
-        web.NSNamespace("/flights",
-            web.NSRouter("/dest_time/search", &controllers.FlightController{}, "get:Get"),  // Corrected route
-        ),
-    )
-
-    // Register the namespace
-    web.AddNamespace(ns)
+// InitRoutes initializes all routes for the application
+func InitRoutes() {
+	// Define the API namespace
+	ns := web.NewNamespace("/v1/api",
+		web.NSNamespace("/flights",
+			web.NSRouter("all_params/search", &controllers.FlightController{}, "get:GetByAllParams"),
+			web.NSRouter("/:id", &controllers.FlightController{}, "get:GetFlightDetails"),
+			web.NSRouter("/dest_time/search", &controllers.FlightController{}, "get:Get"),
+		),
+	)
+	// Register the namespace
+	web.AddNamespace(ns)
 	web.Router("/swagger/*", &controllers.SwaggerController{})
+}
+
+func init() {
+	InitRoutes()
 }
