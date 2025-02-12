@@ -37,18 +37,18 @@ build:
   script:
     - go build -o main ./main.go  # Build the Go application
 
-Docker Stage: Build and push the Docker image
-docker:
-  stage: docker
-  image: docker:latest
-  services:
-    - docker:dind  # Runs Docker inside the CI/CD pipeline
-  before_script:
-    - export DOCKER_HOST=tcp://docker:2375  # Connect to Docker Daemon inside the pipeline
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"  # Docker login
-  script:
-    - docker build -t $IMAGE_NAME:$CI_COMMIT_REF_NAME .  # Build Docker image with current commit ref
-    - docker push $IMAGE_NAME:$CI_COMMIT_REF_NAME  # Push the image to GitLab registry
+# Docker Stage: Build and push the Docker image
+# docker:
+#   stage: docker
+#   image: docker:latest
+#   services:
+#     - docker:dind  # Runs Docker inside the CI/CD pipeline
+#   before_script:
+#     - export DOCKER_HOST=tcp://docker:2375  # Connect to Docker Daemon inside the pipeline
+#     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"  # Docker login
+#   script:
+#     - docker build -t $IMAGE_NAME:$CI_COMMIT_REF_NAME .  # Build Docker image with current commit ref
+#     - docker push $IMAGE_NAME:$CI_COMMIT_REF_NAME  # Push the image to GitLab registry
 
 # Deploy Stage: Deploy the application (configure as needed)
 deploy:
