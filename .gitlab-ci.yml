@@ -1,0 +1,64 @@
+stages:
+  - test
+  - build
+  - docker
+  - deploy
+
+variables:
+  GO_VERSION: "latest"
+  IMAGE_NAME: "registry.gitlab.com/root/flight_details_ci"
+
+before_script:
+  - export PATH=$PATH:/usr/local/go/bin
+  - go version
+  - go mod tidy
+  # Install docker-compose (if not available by default)
+  - curl -L https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
+  - chmod +x /usr/local/bin/docker-compose
+  - docker-compose --version  # Verify docker-compose installation
+
+# Test Stage: Run tests in all directories
+test:
+  stage: test
+  image: golang:${GO_VERSION}
+  variables:
+    ELASTICSEARCH_URL: "http://localhost:9200"
+    KIBANA_URL: "http://localhost:5601"
+  script:
+    - sleep 10  # Allow some time for services to be up
+    - curl -f http://localhost:9200 || (echo "Elasticsearch is down" && exit 1)
+    - curl -f http://localhost:5601 || (echo "Kibana is down" && exit 1)
+    - go test -v ./...  # Run tests recursively in all directories
+
+# Build Stage: Build the Go application
+build:
+  stage: build
+  image: golang:${GO_VERSION}
+  script:
+    - go build -o main ./main.go  # Build the Go application
+
+Docker Stage: Build and push the Docker image
+docker:
+  stage: docker
+  image: docker:latest
+  services:
+    - docker:dind  # Runs Docker inside the CI/CD pipeline
+  before_script:
+    - export DOCKER_HOST=tcp://docker:2375  # Connect to Docker Daemon inside the pipeline
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"  # Docker login
+  script:
+    - docker build -t $IMAGE_NAME:$CI_COMMIT_REF_NAME .  # Build Docker image with current commit ref
+    - docker push $IMAGE_NAME:$CI_COMMIT_REF_NAME  # Push the image to GitLab registry
+
+# Deploy Stage: Deploy the application (configure as needed)
+deploy:
+  stage: deploy
+  script:
+    - echo "Deploying..."  # Placeholder for deployment commands
+    # Add your deployment steps here (e.g., SSH to server, pull image, restart container)
+  only:
+    - branches  # Run only on main or feature branches
+
+
+
+
