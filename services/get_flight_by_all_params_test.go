@@ -60,3 +60,60 @@ func TestSearchFlights(t *testing.T) {
 	destCountryValue := destCountryQuery.(map[string]interface{})["DestCountry"]
 	assert.Equal(t, destCountryValue, params.DestCountry)
 }
+
+func TestAddGeoLocQuery(t *testing.T) {
+	// Define the table of test cases
+	tests := []struct {
+		lat           string
+		lon           string
+		expectGeoLoc  bool
+		expectedQuery map[string]interface{}
+	}{
+		{
+			lat:          "34.0522",
+			lon:          "-118.2437",
+			expectGeoLoc: true,
+			expectedQuery: map[string]interface{}{
+				"geo_distance": map[string]interface{}{
+					"distance": "1m", // Very small distance => near-exact geo match
+					"OriginLocation": map[string]interface{}{
+						"lat": "34.0522",
+						"lon": "-118.2437",
+					},
+				},
+			},
+		},
+		{
+			lat:           "",
+			lon:           "",
+			expectGeoLoc:  false,
+			expectedQuery: map[string]interface{}{},
+		},
+	}
+
+	// Iterate over the test cases
+	for _, tt := range tests {
+		t.Run("GeoLocQueryTest", func(t *testing.T) {
+			// Initialize the query map
+			query := map[string]interface{}{
+				"query": map[string]interface{}{
+					"bool": map[string]interface{}{
+						"must": []map[string]interface{}{},
+					},
+				},
+			}
+
+			// Call the addGeoLocQuery function to append geo-location filter
+			addGeoLocQuery(query, tt.lat, tt.lon)
+
+			// Check if the geo_location query was correctly added based on the test case
+			if tt.expectGeoLoc {
+				// Assert that geo_location query was added
+				assert.Contains(t, query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"], tt.expectedQuery)
+			} else {
+				// Assert that no geo_location query was added
+				assert.NotContains(t, query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"], "geo_distance")
+			}
+		})
+	}
+}
