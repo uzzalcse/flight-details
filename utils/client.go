@@ -17,7 +17,7 @@ type ESClient struct {
 }
 
 // GetElasticClient initializes and returns an ESClient
-func GetElasticClient() *ESClient {
+func getElasticClient() *ESClient {
 	// Retrieve configuration from beego config
 	ES_API_KEY, err := web.AppConfig.String("ES_LOCAL_API_KEY")
 	if err != nil {

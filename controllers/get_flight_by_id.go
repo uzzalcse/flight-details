@@ -17,7 +17,7 @@ type FlightController struct {
 // Init initializes the Elasticsearch client
 func (f *FlightController) Init(ctx *beecontext.Context, controllerName, actionName string, app interface{}) {
 	f.Controller.Init(ctx, controllerName, actionName, app)
-	f.esClient = Client
+	f.esClient = utils.Client
 }
 
 // GetFlightDetails handles GET /v1/api/:id
