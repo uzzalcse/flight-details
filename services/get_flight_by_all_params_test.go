@@ -1,135 +1,62 @@
-package services_test
+package services
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
-	"net/http"
 	"testing"
 
-	"flight-details/services"
 	"flight-details/structs"
-	"flight-details/utils"
 
-	"bou.ke/monkey"
-	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 )
 
-// TestSearchFlights - Table-Driven Test (TDT) for SearchFlights
 func TestSearchFlights(t *testing.T) {
-	// Define test cases
-	tests := []struct {
-		name             string
-		mockResponse     string
-		mockError        error
-		inputParams      structs.FlightSearchParams
-		expectedSuccess  bool
-		expectedResponse map[string]interface{}
-	}{
-		{
-			name:         "Success - Valid Request",
-			mockResponse: `{"hits":{"total":1,"hits":[]}}`,
-			mockError:    nil,
-			inputParams: structs.FlightSearchParams{
-				TravelTime:    "2025-02-03T00:00:00",
-				FlightNum:     "9HY9SWR",
-				DestCountry:   "AU",
-				OriginWeather: "Sunny",
-			},
-			expectedSuccess: true,
-			expectedResponse: map[string]interface{}{
-				"hits": map[string]interface{}{
-					"total": float64(1),
-					"hits":  []interface{}{},
-				},
-			},
-		},
-		{
-			name:         "Success - Triggers addExactRangeQuery",
-			mockResponse: `{"hits":{"total":2,"hits":[]}}`,
-			mockError:    nil,
-			inputParams: structs.FlightSearchParams{
-				TravelTime:         "2025-02-03T00:00:00",
-				AvgTicketPrice:     500.75,  // ✅ Triggers addExactRangeQuery
-				DistanceMiles:      1500.55, // ✅ Triggers addExactRangeQuery
-				DistanceKilometers: 2414.56, // ✅ Triggers addExactRangeQuery
-				FlightTimeMin:      120,     // ✅ Triggers addExactRangeQuery
-				FlightTimeHour:     2,       // ✅ Triggers addExactRangeQuery
-			},
-			expectedSuccess: true,
-			expectedResponse: map[string]interface{}{
-				"hits": map[string]interface{}{
-					"total": float64(2),
-					"hits":  []interface{}{},
-				},
-			},
-		},
-		{
-			name:         "Success - Triggers addGeoLocQuery",
-			mockResponse: `{"hits":{"total":3,"hits":[]}}`,
-			mockError:    nil,
-			inputParams: structs.FlightSearchParams{
-				TravelTime:        "2025-02-03T00:00:00",
-				OriginLocationLat: "40.7128",  // ✅ Triggers addGeoLocQuery
-				OriginLocationLon: "-74.0060", // ✅ Triggers addGeoLocQuery
-			},
-			expectedSuccess: true,
-			expectedResponse: map[string]interface{}{
-				"hits": map[string]interface{}{
-					"total": float64(3),
-					"hits":  []interface{}{},
-				},
-			},
-		},
+	// Define the sample params for the flight search
+	params := structs.FlightSearchParams{
+		FlightNum:          "AA123",
+		DestCountry:        "USA",
+		OriginWeather:      "Clear",
+		OriginCityName:     "New York",
+		DestWeather:        "Rain",
+		Dest:               "LAX",
+		FlightDelayType:    "Weather",
+		OriginCountry:      "USA",
+		Carrier:            "American Airlines",
+		Origin:             "JFK",
+		DestRegion:         "California",
+		OriginAirportID:    "JFK",
+		OriginRegion:       "Northeast",
+		DestCityName:       "Los Angeles",
+		TravelTime:         "2025-02-03T10:33:28", // Example timestamp
+		AvgTicketPrice:     200.50,
+		DistanceMiles:      3000,
+		DistanceKilometers: 4800,
+		FlightTimeMin:      180,
+		FlightTimeHour:     3,
+		FlightDelay:        true,
+		Cancelled:          false,
 	}
 
-	// Iterate over test cases
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			// ✅ Mock Elasticsearch Client
-			mockESClient := &elasticsearch.Client{}
+	// Call the SearchFlights function
+	query := SearchFlights(params)
 
-			monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
-				return &utils.ESClient{Client: mockESClient}
-			})
-			defer monkey.Unpatch(utils.GetElasticClient)
+	// Test that the query map has been correctly built
+	assert.NotNil(t, query)
+	assert.Contains(t, query, "query")
+	assert.Contains(t, query["query"], "bool")
+	assert.Contains(t, query["query"].(map[string]interface{})["bool"], "must")
 
-			// ✅ Fully Mock Elasticsearch API Calls
-			monkey.Patch((*elasticsearch.Client).Perform, func(_ *elasticsearch.Client, req *http.Request) (*http.Response, error) {
-				if tc.mockError != nil {
-					// ✅ Return a `nil` response + controlled error
-					return nil, tc.mockError
-				}
+	// Test for the timestamp range query
+	timestampQuery := query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{})[0]["range"]
+	rangeQuery := timestampQuery.(map[string]interface{})["timestamp"].(map[string]interface{})
+	assert.Equal(t, rangeQuery["gte"], params.TravelTime)
+	assert.Equal(t, rangeQuery["lte"], params.TravelTime)
 
-				// ✅ Mock successful Elasticsearch response
-				resp := &http.Response{
-					StatusCode: 200,
-					Body:       io.NopCloser(bytes.NewBufferString(tc.mockResponse)),
-				}
-				return resp, nil
-			})
-			defer monkey.Unpatch((*elasticsearch.Client).Perform)
+	// Test for FlightNum term query
+	flightNumQuery := query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{})[1]["term"]
+	flightNumValue := flightNumQuery.(map[string]interface{})["FlightNum"]
+	assert.Equal(t, flightNumValue, params.FlightNum)
 
-			// ✅ Debugging Output to Ensure Patch is Applied
-			t.Logf("Running Test: %s | Expected Success: %v", tc.name, tc.expectedSuccess)
-
-			// Call the actual SearchFlights function
-			response, err := services.SearchFlights(tc.inputParams)
-
-			// ✅ Debugging Output to Check Results
-			t.Logf("Test: %s | Response: %s | Error: %v", tc.name, response, err)
-
-			// Check success/failure based on expectations
-			if tc.expectedSuccess {
-				assert.NoError(t, err, "Expected no error")
-				var body map[string]interface{}
-				err = json.Unmarshal([]byte(response), &body)
-				assert.NoError(t, err, "Expected valid JSON response")
-				assert.Equal(t, tc.expectedResponse, body, "Response body should match expected")
-			} else {
-				assert.Error(t, err, "Expected an error")
-			}
-		})
-	}
+	// Test for the other dynamic filters (example: DestCountry)
+	destCountryQuery := query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]map[string]interface{})[2]["term"]
+	destCountryValue := destCountryQuery.(map[string]interface{})["DestCountry"]
+	assert.Equal(t, destCountryValue, params.DestCountry)
 }

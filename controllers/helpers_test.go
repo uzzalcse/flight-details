@@ -137,7 +137,7 @@ func TestParseInt(t *testing.T) {
 }
 
 // MockFlightController to test c.Data initialization
-type MockFlightController struct {
+type MockFlightControllerHelper struct {
 	Data map[interface{}]interface{}
 	Ctx  struct {
 		Input struct {
@@ -148,7 +148,7 @@ type MockFlightController struct {
 
 // TestFlightControllerDataInitialization - Test for c.Data initialization
 func TestFlightControllerDataInitialization(t *testing.T) {
-	controller := &MockFlightController{}
+	controller := &MockFlightControllerHelper{}
 
 	// Simulate nil data
 	if controller.Data == nil {

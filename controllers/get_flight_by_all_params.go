@@ -3,6 +3,7 @@ package controllers
 
 import (
 	"flight-details/services"
+	"fmt"
 	"net/http"
 )
 
@@ -44,10 +45,6 @@ import (
 // @Failure 400 {object} map[string]interface{}
 // @Router /v1/api/flights/all_params/search [get]
 func (c *FlightController) GetByAllParams() {
-	if c.Data == nil {
-		c.Data = make(map[interface{}]interface{})
-	}
-
 	// Parse incoming query parameters
 	params, err := ParseFlightSearchRequest(c)
 	if err != nil {
@@ -61,18 +58,16 @@ func (c *FlightController) GetByAllParams() {
 	}
 
 	// Call the service layer to get flight data
-	result, err := services.SearchFlights(params)
+	query := services.SearchFlights(params)
+
+	res, err := c.esClient.ExecuteSearch(query)
 	if err != nil {
-		c.Data["json"] = map[string]interface{}{
-			"status":  "error",
-			"message": "Error fetching flight data: " + err.Error(),
-		}
-		c.Ctx.Output.SetStatus(http.StatusInternalServerError) // ✅ Return `500 Internal Server Error`
+		c.Data["json"] = map[string]string{"error": fmt.Sprintf("Failed to fetch flight details: %v", err)}
 		c.ServeJSON()
 		return
 	}
 
-	// Format and return success response
-	c.Data["json"] = FormatSuccessResponse(result)
+	// Send response
+	c.Data["json"] = res
 	c.ServeJSON()
 }
