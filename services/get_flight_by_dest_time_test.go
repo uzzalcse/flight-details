@@ -50,85 +50,61 @@ var mockElasticResponse = map[string]interface{}{
 	},
 }
 
+func setupTestEnvironment() func() {
+	// Create a mock ESClient
+	mockClient := &utils.ESClient{}
+	
+	// Store the original Client
+	originalClient := utils.Client
+	
+	// Set our mock client
+	utils.Client = mockClient
+	
+	// Return cleanup function
+	return func() {
+		utils.Client = originalClient
+	}
+}
+
 func TestSearchFlights_Success(t *testing.T) {
-	// Patch GetElasticClient to return a mock ESClient
-	monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
-		return &utils.ESClient{}
-	})
-	defer monkey.UnpatchAll()
+	// Setup test environment
+	cleanup := setupTestEnvironment()
+	defer cleanup()
 
 	// Patch ExecuteSearch method
-	monkey.PatchInstanceMethod(reflect.TypeOf((*utils.ESClient)(nil)), "ExecuteSearch", func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
-		return mockElasticResponse, nil
-	})
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(utils.Client), "ExecuteSearch", 
+		func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
+			return mockElasticResponse, nil
+		})
+	defer patch.Unpatch()
 
 	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
 	assert.Nil(t, err, "Expected no error, but got: %v", err)
 	assert.NotNil(t, flights, "Expected flights to not be nil")
-	assert.Len(t, flights, 1, "Expected 1 flight result but got %d", len(flights))
-	assert.Equal(t, "EAYQW69", flights[0].FlightNum, "FlightNum does not match expected")
+	assert.Len(t, flights["hits"].(map[string]interface{})["hits"].([]map[string]interface{}), 1, 
+		"Expected 1 flight result but got a different number")
+	assert.Equal(t, "EAYQW69", 
+		flights["hits"].(map[string]interface{})["hits"].([]map[string]interface{})[0]["_source"].(map[string]interface{})["FlightNum"], 
+		"FlightNum does not match expected")
 }
-
 func TestSearchFlights_ExecutionError(t *testing.T) {
-	// Patch GetElasticClient
-	monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
-		return &utils.ESClient{}
-	})
-	defer monkey.UnpatchAll()
+	// Setup test environment
+	cleanup := setupTestEnvironment()
+	defer cleanup()
 
 	// Patch ExecuteSearch to return an error
-	monkey.PatchInstanceMethod(reflect.TypeOf((*utils.ESClient)(nil)), "ExecuteSearch", func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
-		return nil, errors.New("Elasticsearch execution error")
-	})
+	patch := monkey.PatchInstanceMethod(reflect.TypeOf(utils.Client), "ExecuteSearch",
+		func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
+			return nil, errors.New("Elasticsearch execution error")
+		})
+	defer patch.Unpatch()
 
 	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
 
 	assert.NotNil(t, err, "Expected an error but got nil")
 	assert.Contains(t, err.Error(), "error executing search", "Error message mismatch")
 	assert.Nil(t, flights, "Expected nil flights but got: %v", flights)
-}
-
-func TestSearchFlights_InvalidJSONResponse(t *testing.T) {
-	// Patch GetElasticClient
-	monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
-		return &utils.ESClient{}
-	})
-	defer monkey.UnpatchAll()
-
-	// Patch ExecuteSearch to return an error
-	monkey.PatchInstanceMethod(reflect.TypeOf((*utils.ESClient)(nil)), "ExecuteSearch",
-		func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
-			return nil, errors.New("invalid JSON response")
-		})
-
-	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
-
-	assert.NotNil(t, err, "Expected an error but got nil")
-	assert.Contains(t, err.Error(), "invalid JSON response", "Error message mismatch")
-	assert.Nil(t, flights, "Expected nil flights but got: %v", flights)
-}
-
-func TestAddMatchQuery(t *testing.T) {
-	qb := NewQueryBuilder()
-	qb.AddMatchQuery("test_field", "test_value")
-
-	expectedQuery := map[string]interface{}{
-		"query": map[string]interface{}{
-			"bool": map[string]interface{}{
-				"must": []interface{}{
-					map[string]interface{}{
-						"match": map[string]interface{}{
-							"test_field": "test_value",
-						},
-					},
-				},
-			},
-		},
-		"size": 100,
-	}
-
-	assert.Equal(t, expectedQuery, qb.Build(), "The query built does not match the expected output")
 }
 
 func TestSearchFlights_EmptyDestination(t *testing.T) {
@@ -147,43 +123,38 @@ func TestSearchFlights_InvalidTimestampFormat(t *testing.T) {
 	assert.Nil(t, flights, "Expected nil flights")
 }
 
-func TestSearchFlights_JSONMarshallingError(t *testing.T) {
-	// Patch GetElasticClient
-	monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
-		return &utils.ESClient{}
-	})
-	defer monkey.UnpatchAll()
+func TestAddTermQuery(t *testing.T) {
+	// Initialize query builder
+	qb := NewQueryBuilder()
+	
+	// Add term query
+	qb.AddTermQuery("test_field", "test_value")
 
-	// Patch ExecuteSearch to return an invalid type that causes JSON marshalling failure
-	monkey.PatchInstanceMethod(reflect.TypeOf((*utils.ESClient)(nil)), "ExecuteSearch", func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
-		return map[string]interface{}{
-			"invalid": make(chan int), // This will cause JSON marshalling to fail
-		}, nil
-	})
+	// Get built query
+	builtQuery := qb.Build()
 
-	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
+	// Remove non-relevant fields for assertion
+	delete(builtQuery, "_source")
+	delete(builtQuery, "runtime_mappings")
 
-	assert.NotNil(t, err, "Expected an error for JSON marshalling failure")
-	assert.Contains(t, err.Error(), "error marshalling response", "Error message mismatch")
-	assert.Nil(t, flights, "Expected nil flights")
+	// Define expected query structure
+	expectedQuery := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": []interface{}{
+					map[string]interface{}{
+						"term": map[string]interface{}{
+							"test_field": "test_value",
+						},
+					},
+				},
+			},
+		},
+		"size": 100,
+	}
+
+	// Assert equality
+	assert.Equal(t, expectedQuery, builtQuery, "The query built does not match the expected output")
 }
 
-func TestSearchFlights_JSONUnmarshallingError(t *testing.T) {
-	monkey.Patch(utils.GetElasticClient, func() *utils.ESClient {
-		return &utils.ESClient{}
-	})
-	defer monkey.UnpatchAll()
 
-	// Patch ExecuteSearch to return malformed JSON
-	monkey.PatchInstanceMethod(reflect.TypeOf((*utils.ESClient)(nil)), "ExecuteSearch", func(_ *utils.ESClient, _ map[string]interface{}) (map[string]interface{}, error) {
-		return map[string]interface{}{
-			"hits": "invalid-json-format",
-		}, nil
-	})
-
-	flights, err := SearchFlightDetails("Treviso", "2025-02-03T10:33:28")
-
-	assert.NotNil(t, err, "Expected an error for JSON unmarshalling failure")
-	assert.Contains(t, err.Error(), "error unmarshaling response", "Error message mismatch")
-	assert.Nil(t, flights, "Expected nil flights")
-}

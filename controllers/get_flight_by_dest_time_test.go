@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"flight-details/services"
-	"flight-details/structs"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,44 +13,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFlightController_Get(t *testing.T) {
-	// Mock Response Data that matches actual API response structure
-	mockFlights := []structs.FlightSearchParams{
-		{
-			FlightNum:          "EAYQW69",
-			DestCountry:        "IT",
-			OriginWeather:      "Thunder & Lightning",
-			OriginCityName:     "Naples",
-			DestWeather:        "Clear",
-			Dest:               "Treviso-Sant'Angelo Airport",
-			FlightDelayType:    "Weather Delay",
-			OriginCountry:      "IT",
-			DayOfWeek:          0,
-			TravelTime:         "",
-			DestLocationLat:    "",
-			DestLocationLon:    "",
-			DestAirportID:      "TV01",
-			Carrier:            "Kibana Airlines",
-			Origin:             "Naples International Airport",
-			OriginLocationLat:  "",
-			OriginLocationLon:  "",
-			DestRegion:         "IT-34",
-			OriginAirportID:    "NA01",
-			OriginRegion:       "IT-72",
-			DestCityName:       "Treviso",
-			FlightDelayMin:     180,
-			Cancelled:          true,
-			FlightDelay:        true,
-			AvgTicketPrice:     181.69421554118,
-			DistanceMiles:      345.31943877289535,
-			DistanceKilometers: 555.7377668725265,
-			FlightTimeMin:      222.74905899019436,
-			FlightTimeHour:     3.712484316503239,
+func TestFlightController_Get_Success(t *testing.T) {
+	mockFlights := map[string]interface{}{
+		"hits": map[string]interface{}{
+			"hits": []map[string]interface{}{
+				{
+					"_source": map[string]interface{}{
+						"FlightNum":     "EAYQW69",
+						"DestCityName":  "Treviso",
+						"timestamp":     "2025-02-03T10:33:28",
+						"Carrier":       "Kibana Airlines",
+					},
+				},
+			},
 		},
 	}
 
-	// Monkey Patch `services.SearchFlights` to return mock data
-	monkey.Patch(services.SearchFlightDetails, func(destination, date string) ([]structs.FlightSearchParams, error) {
+	monkey.Patch(services.SearchFlightDetails, func(destination, date string) (map[string]interface{}, error) {
 		return mockFlights, nil
 	})
 	defer monkey.UnpatchAll()
@@ -59,70 +37,41 @@ func TestFlightController_Get(t *testing.T) {
 	req, _ := http.NewRequest("GET", "/v1/api/flights/dest_time/search?DestCityName=Treviso&timestamp=2025-02-03T10:33:28", nil)
 	w := httptest.NewRecorder()
 
-	// Create controller and properly initialize it
 	flightController := &FlightController{}
 	ctx := context.NewContext()
 	ctx.Reset(w, req)
-
-	ctx.Input = &context.BeegoInput{
-		Context:     ctx,
-		RequestBody: []byte{},
-	}
-
-	ctx.Output = &context.BeegoOutput{
-		Context: ctx,
-	}
+	ctx.Input = &context.BeegoInput{Context: ctx}
+	ctx.Output = &context.BeegoOutput{Context: ctx}
 
 	flightController.Init(ctx, "FlightController", "Get", nil)
 	flightController.Get()
 
 	assert.Equal(t, http.StatusOK, w.Code, "Expected status 200 but got %d", w.Code)
 
-	// Parse JSON response
-	var response []map[string]interface{}
+	// Parse JSON response correctly as a map
+	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.Nil(t, err, "Expected valid JSON response but got error %v", err)
 
-	// Create expected response based on mock data
-	expectedResponse := []map[string]interface{}{
-		{
-			"FlightNum":          "EAYQW69",
-			"DestCountry":        "IT",
-			"OriginWeather":      "Thunder & Lightning",
-			"OriginCityName":     "Naples",
-			"DestWeather":        "Clear",
-			"Dest":               "Treviso-Sant'Angelo Airport",
-			"FlightDelayType":    "Weather Delay",
-			"OriginCountry":      "IT",
-			"DayOfWeek":          float64(0),
-			"TravelTime":         "",
-			"DestLocationLat":    "",
-			"DestLocationLon":    "",
-			"DestAirportID":      "TV01",
-			"Carrier":            "Kibana Airlines",
-			"Origin":             "Naples International Airport",
-			"OriginLocationLat":  "",
-			"OriginLocationLon":  "",
-			"DestRegion":         "IT-34",
-			"OriginAirportID":    "NA01",
-			"OriginRegion":       "IT-72",
-			"DestCityName":       "Treviso",
-			"FlightDelayMin":     float64(180),
-			"Cancelled":          true,
-			"FlightDelay":        true,
-			"AvgTicketPrice":     181.69421554118,
-			"DistanceMiles":      345.31943877289535,
-			"DistanceKilometers": 555.7377668725265,
-			"FlightTimeMin":      222.74905899019436,
-			"FlightTimeHour":     3.712484316503239,
-		},
-	}
+	// Extract the "hits" field properly
+	hits, ok := response["hits"].(map[string]interface{})
+	assert.True(t, ok, "Expected 'hits' field in response")
 
-	assert.Equal(t, expectedResponse, response, "Expected response does not match actual response")
+	hitsArray, ok := hits["hits"].([]interface{})
+	assert.True(t, ok, "Expected 'hits' field to be an array")
+
+	assert.Len(t, hitsArray, 1, "Expected 1 flight entry")
+
+	flightData, ok := hitsArray[0].(map[string]interface{})["_source"].(map[string]interface{})
+	assert.True(t, ok, "Expected _source field in flight entry")
+
+	// Ensure expected values are returned
+	assert.Equal(t, mockFlights["hits"].(map[string]interface{})["hits"].([]map[string]interface{})[0]["_source"], flightData, "Flight details do not match expected")
 }
 
+
 func TestFlightController_Get_SearchError(t *testing.T) {
-	monkey.Patch(services.SearchFlightDetails, func(destination, date string) ([]structs.FlightSearchParams, error) {
+	monkey.Patch(services.SearchFlightDetails, func(destination, date string) (map[string]interface{}, error) {
 		return nil, errors.New("search service error")
 	})
 	defer monkey.UnpatchAll()
@@ -133,27 +82,18 @@ func TestFlightController_Get_SearchError(t *testing.T) {
 	flightController := &FlightController{}
 	ctx := context.NewContext()
 	ctx.Reset(w, req)
-
-	ctx.Input = &context.BeegoInput{
-		Context:     ctx,
-		RequestBody: []byte{},
-	}
-
-	ctx.Output = &context.BeegoOutput{
-		Context: ctx,
-	}
+	ctx.Input = &context.BeegoInput{Context: ctx}
+	ctx.Output = &context.BeegoOutput{Context: ctx}
 
 	flightController.Init(ctx, "FlightController", "Get", nil)
 	flightController.Get()
 
-	assert.Equal(t, http.StatusInternalServerError, w.Code, "Expected status 500 but got %d", w.Code)
+	assert.Equal(t, http.StatusInternalServerError, w.Code)
 
-	// Parse JSON response
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
-	assert.Nil(t, err, "Expected valid JSON response but got error %v", err)
-
-	assert.Equal(t, "search service error", response["error"], "Expected error message does not match")
+	assert.Nil(t, err)
+	assert.Equal(t, "search service error", response["error"])
 }
 
 func TestFlightController_Get_MissingParameters(t *testing.T) {
@@ -191,27 +131,18 @@ func TestFlightController_Get_MissingParameters(t *testing.T) {
 			flightController := &FlightController{}
 			ctx := context.NewContext()
 			ctx.Reset(w, req)
-
-			ctx.Input = &context.BeegoInput{
-				Context:     ctx,
-				RequestBody: []byte{},
-			}
-
-			ctx.Output = &context.BeegoOutput{
-				Context: ctx,
-			}
+			ctx.Input = &context.BeegoInput{Context: ctx}
+			ctx.Output = &context.BeegoOutput{Context: ctx}
 
 			flightController.Init(ctx, "FlightController", "Get", nil)
 			flightController.Get()
 
-			assert.Equal(t, tc.expectedStatus, w.Code, "Expected status %d but got %d", tc.expectedStatus, w.Code)
+			assert.Equal(t, tc.expectedStatus, w.Code)
 
-			// Parse JSON response
 			var response map[string]string
 			err := json.Unmarshal(w.Body.Bytes(), &response)
-			assert.Nil(t, err, "Expected valid JSON response but got error %v", err)
-
-			assert.Equal(t, tc.expectedError, response["error"], "Expected error message does not match")
+			assert.Nil(t, err)
+			assert.Equal(t, tc.expectedError, response["error"])
 		})
 	}
 }

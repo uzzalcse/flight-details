@@ -1,10 +1,8 @@
 package services
 
 import (
-	"encoding/json"
 	"errors"
-	"flight-details/structs"
-	"flight-details/utils"
+	"flight-details/utils" 
 	"fmt"
 	"regexp"
 )
@@ -23,6 +21,7 @@ func NewQueryBuilder() *QueryBuilder {
 					"must": []interface{}{},
 				},
 			},
+			"size": 100, 
 		},
 	}
 }
@@ -39,38 +38,55 @@ func (qb *QueryBuilder) AddTermQuery(field, value string) *QueryBuilder {
 	return qb
 }
 
-// AddMatchQuery adds a match query for text fields
-func (qb *QueryBuilder) AddMatchQuery(field, value string) *QueryBuilder {
-	mustClauses := qb.query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]interface{})
-	matchQuery := map[string]interface{}{
-		"match": map[string]interface{}{
-			field: value,
-		},
-	}
-	qb.query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"] = append(mustClauses, matchQuery)
-	return qb
-}
-
 // Build returns the final query as a map
 func (qb *QueryBuilder) Build() map[string]interface{} {
 	qb.query["size"] = 100
+	
+	// Add source transformation to flatten nested location fields
+	qb.query["_source"] = map[string]interface{}{
+		"includes": []string{
+			"*",
+			"DestLocation.lat",
+			"DestLocation.lon",
+			"OriginLocation.lat",
+			"OriginLocation.lon",
+		},
+	}
+	
+	// Add runtime fields to map nested locations to flat fields
+	qb.query["runtime_mappings"] = map[string]interface{}{
+		"DestLocationLat": map[string]interface{}{
+			"type": "keyword",
+			"script": map[string]interface{}{
+				"source": "emit(doc['DestLocation.lat'].value)",
+			},
+		},
+		"DestLocationLon": map[string]interface{}{
+			"type": "keyword",
+			"script": map[string]interface{}{
+				"source": "emit(doc['DestLocation.lon'].value)",
+			},
+		},
+		"OriginLocationLat": map[string]interface{}{
+			"type": "keyword",
+			"script": map[string]interface{}{
+				"source": "emit(doc['OriginLocation.lat'].value)",
+			},
+		},
+		"OriginLocationLon": map[string]interface{}{
+			"type": "keyword",
+			"script": map[string]interface{}{
+				"source": "emit(doc['OriginLocation.lon'].value)",
+			},
+		},
+	}
+	
 	return qb.query
 }
 
-// SearchResult represents the structure of Elasticsearch response
-type SearchResult struct {
-	Hits struct {
-		Total struct {
-			Value int `json:"value"`
-		} `json:"total"`
-		Hits []struct {
-			Source structs.FlightSearchParams `json:"_source"`
-		} `json:"hits"`
-	} `json:"hits"`
-}
 
-// SearchFlights searches for flights using the modular query builder
-func SearchFlightDetails(destination, date string) ([]structs.FlightSearchParams, error) {
+// SearchFlightDetails searches for flights using the modular query builder
+func SearchFlightDetails(destination, date string) (map[string]interface{}, error) {
 	// Validate destination (should not be empty)
 	if destination == "" {
 		return nil, errors.New("destination city name is required")
@@ -82,7 +98,8 @@ func SearchFlightDetails(destination, date string) ([]structs.FlightSearchParams
 		return nil, errors.New("invalid timestamp format. Expected format: YYYY-MM-DDTHH:MM:SS")
 	}
 
-	esClient := utils.GetElasticClient()
+	esClient := utils.Client
+
 	queryBuilder := NewQueryBuilder()
 
 	// Build the query using method chaining
@@ -97,23 +114,5 @@ func SearchFlightDetails(destination, date string) ([]structs.FlightSearchParams
 		return nil, fmt.Errorf("error executing search: %v", err)
 	}
 
-	// Parse the response
-	var results SearchResult
-	jsonData, err := json.Marshal(resp)
-	if err != nil {
-		return nil, fmt.Errorf("error marshalling response: %v", err)
-	}
-
-	err = json.Unmarshal(jsonData, &results)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshaling response: %v", err)
-	}
-
-	// Extract flights from results
-	flights := make([]structs.FlightSearchParams, len(results.Hits.Hits))
-	for i, hit := range results.Hits.Hits {
-		flights[i] = hit.Source
-	}
-
-	return flights, nil
+	return resp, nil
 }
