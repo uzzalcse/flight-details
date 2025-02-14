@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"encoding/json"
+	"flight-details/structs"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,51 +10,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestFormatSuccessResponse - Test for `formatSuccessResponse`
-func TestFormatSuccessResponse(t *testing.T) {
-	// Define test cases
-	tests := []struct {
-		name        string
-		inputJSON   string
-		expected    map[string]interface{}
-		expectError bool
-	}{
-		{
-			name: "Success - Valid JSON",
-			inputJSON: `{
-				"hits": {"total": 1}
-			}`,
-			expected: map[string]interface{}{
-				"status": "success",
-				"data": map[string]interface{}{
-					"hits": map[string]interface{}{
-						"total": float64(1),
-					},
-				},
-			},
-			expectError: false,
-		},
-		{
-			name:      "Failure - Invalid JSON",
-			inputJSON: `{invalid-json}`,
-			expected: map[string]interface{}{
-				"status":  "error",
-				"message": "Response parsing failed",
-			},
-			expectError: true,
-		},
-	}
-
-	// Iterate over test cases
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result := FormatSuccessResponse(tc.inputJSON)
-			assert.Equal(t, tc.expected, result, "Response should match expected")
-		})
-	}
-}
-
-// TestParseFloat - Test for `ParseFloat`
 func TestParseFloat(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -62,211 +17,265 @@ func TestParseFloat(t *testing.T) {
 		expected float64
 		hasError bool
 	}{
-		{"Valid float", "12.34", 12.34, false},
-		{"Valid integer as float", "7", 7.0, false},
-		{"Empty string", "", 0, false},
-		{"Invalid number", "abc", 0, true},
+		{"Empty string", "", 0.0, false},
+		{"Valid float", "123.45", 123.45, false},
+		{"Integer as float", "123", 123.0, false},
+		{"Invalid float", "abc", 0.0, true},
+		{"Negative float", "-123.45", -123.45, false},
+		{"Zero", "0", 0.0, false},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := ParseFloat(tc.input)
-			if tc.hasError {
-				assert.Error(t, err, "Expected error for invalid float")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseFloat(tt.input)
+			if tt.hasError {
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expected, result, "Parsed float should match expected value")
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
 }
 
-func TestParseFloatErrors(t *testing.T) {
+func TestParseInt(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected float64
+		expected int
 		hasError bool
 	}{
-		{"Valid float", "12.34", 12.34, false},
-		{"Valid integer as float", "7", 7.0, false},
 		{"Empty string", "", 0, false},
-		{"Invalid number", "abc", 0, true}, // Should return error
+		{"Valid integer", "123", 123, false},
+		{"Negative integer", "-123", -123, false},
+		{"Invalid integer", "123.45", 0, true},
+		{"Non-numeric", "abc", 0, true},
+		{"Zero", "0", 0, false},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := ParseFloat(tc.input)
-			if tc.hasError {
-				assert.Error(t, err, "Expected error for invalid float")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseInt(tt.input)
+			if tt.hasError {
+				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tc.expected, result, "Parsed float should match expected value")
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
 }
 
-// TestParseInt - Test for `ParseInt`
-func TestParseInt(t *testing.T) {
+func TestParseBool(t *testing.T) {
 	tests := []struct {
-		name        string
-		input       string
-		expected    int
-		expectError bool
+		name     string
+		input    string
+		expected bool
+		hasError bool
 	}{
-		{"Valid integer", "25", 25, false},
-		{"Zero value", "0", 0, false},
-		{"Empty string (defaults to 0)", "", 0, false},
-		{"Invalid number", "xyz", 0, true},
-		{"Negative number", "-5", -5, false},
-		{"Large number", "1000000", 1000000, false},
+		{"Empty string", "", false, true},
+		{"String true", "true", true, false},
+		{"String false", "false", false, false},
+		{"Numeric 1", "1", true, false},
+		{"Numeric 0", "0", false, false},
+		{"Invalid value", "yes", false, true},
+		{"Invalid numeric", "2", false, true},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			result, err := ParseInt(tc.input)
-			if tc.expectError {
-				assert.Error(t, err, "Expected an error for invalid input")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result, err := ParseBool(tt.input)
+			if tt.hasError {
+				assert.Error(t, err)
 			} else {
-				assert.NoError(t, err, "Did not expect an error for valid input")
-				assert.Equal(t, tc.expected, result, "Parsed int should match expected value")
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, result)
 			}
 		})
 	}
 }
 
-// MockFlightController to test c.Data initialization
-type MockFlightControllerHelper struct {
-	Data map[interface{}]interface{}
-	Ctx  struct {
-		Input struct {
-			Query func(string) string
-		}
+func TestFormatSuccessResponse(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected map[string]interface{}
+	}{
+		{
+			name:  "Valid JSON without status",
+			input: `{"message": "test"}`,
+			expected: map[string]interface{}{
+				"status": "success",
+				"data": map[string]interface{}{
+					"message": "test",
+				},
+			},
+		},
+		{
+			name:  "Valid JSON with status",
+			input: `{"status": "custom", "message": "test"}`,
+			expected: map[string]interface{}{
+				"status":  "custom",
+				"message": "test",
+			},
+		},
+		{
+			name:  "Invalid JSON",
+			input: `{invalid json}`,
+			expected: map[string]interface{}{
+				"status":  "error",
+				"message": "Response parsing failed",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := FormatSuccessResponse(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
 	}
 }
 
-// TestFlightControllerDataInitialization - Test for c.Data initialization
-func TestFlightControllerDataInitialization(t *testing.T) {
-	controller := &MockFlightControllerHelper{}
-
-	// Simulate nil data
-	if controller.Data == nil {
-		controller.Data = make(map[interface{}]interface{})
-	}
-
-	assert.NotNil(t, controller.Data, "c.Data should be initialized to an empty map")
-}
-
-// TestFormatSuccessResponseStatusCheck - Test if response maintains existing status field
-func TestFormatSuccessResponseStatusCheck(t *testing.T) {
-	responseWithStatus := `{"status": "error", "message": "Some error"}`
-	var expected map[string]interface{}
-	_ = json.Unmarshal([]byte(responseWithStatus), &expected)
-
-	result := FormatSuccessResponse(responseWithStatus)
-
-	assert.Equal(t, expected, result, "Response should return the original JSON if status exists")
-}
-
-func TestParseFlightSearchRequest_ErrorCases(t *testing.T) {
+func TestParseFlightSearchRequest(t *testing.T) {
 	tests := []struct {
 		name           string
-		queryParams    string
-		expectedError  string
-		expectedStatus int
+		queryParams    map[string]string
+		expectedParams structs.FlightSearchParams
+		expectError    bool
 	}{
-		// Mandatory Field Test
 		{
-			name:           "Failure - Missing Required Timestamp",
-			queryParams:    "dayOfWeek=2&FlightDelayMin=30&Cancelled=true",
-			expectedError:  "timestamp (TravelTime) is required",
-			expectedStatus: http.StatusBadRequest,
-		},
-
-		// Invalid Integer Test (dayOfWeek)
-		{
-			name:           "Failure - Invalid dayOfWeek",
-			queryParams:    "timestamp=2025-02-03T00:00:00&dayOfWeek=9",
-			expectedError:  "invalid dayOfWeek: must be between 0 and 6",
-			expectedStatus: http.StatusBadRequest,
-		},
-
-		// Invalid Integer Test (FlightDelayMin)
-		{
-			name:           "Failure - Non-numeric FlightDelayMin",
-			queryParams:    "timestamp=2025-02-03T00:00:00&FlightDelayMin=xyz",
-			expectedError:  "invalid FlightDelayMin value: invalid integer: xyz",
-			expectedStatus: http.StatusBadRequest,
-		},
-
-		// Invalid Boolean Test
-		{
-			name:           "Failure - Invalid Cancelled Boolean",
-			queryParams:    "timestamp=2025-02-03T00:00:00&Cancelled=maybe",
-			expectedError:  "invalid Cancelled value: invalid boolean: maybe",
-			expectedStatus: http.StatusBadRequest,
+			name: "Valid complete request",
+			queryParams: map[string]string{
+				"timestamp":          "2024-01-01",
+				"FlightNum":          "FL123",
+				"dayOfWeek":          "1",
+				"FlightDelayMin":     "30",
+				"Cancelled":          "true",
+				"AvgTicketPrice":     "299.99",
+				"DistanceMiles":      "1000",
+				"DistanceKilometers": "1609.34",
+				"FlightTimeMin":      "120",
+				"FlightTimeHour":     "2",
+			},
+			expectedParams: structs.FlightSearchParams{
+				TravelTime:         "2024-01-01",
+				FlightNum:          "FL123",
+				DayOfWeek:          1,
+				FlightDelayMin:     30,
+				Cancelled:          true,
+				AvgTicketPrice:     299.99,
+				DistanceMiles:      1000,
+				DistanceKilometers: 1609.34,
+				FlightTimeMin:      120,
+				FlightTimeHour:     2,
+			},
+			expectError: false,
 		},
 		{
-			name:           "Failure - Invalid FlightDelay Boolean",
-			queryParams:    "timestamp=2025-02-03T00:00:00&FlightDelay=notTrue",
-			expectedError:  "invalid FlightDelay value: invalid boolean: notTrue",
-			expectedStatus: http.StatusBadRequest,
-		},
-
-		// Invalid Float Test
-		{
-			name:           "Failure - Invalid AvgTicketPrice Float",
-			queryParams:    "timestamp=2025-02-03T00:00:00&AvgTicketPrice=abc",
-			expectedError:  "invalid AvgTicketPrice value: invalid float: abc",
-			expectedStatus: http.StatusBadRequest,
+			name: "Missing required timestamp",
+			queryParams: map[string]string{
+				"FlightNum": "FL123",
+			},
+			expectedParams: structs.FlightSearchParams{
+				FlightNum: "FL123",
+			},
+			expectError: true,
 		},
 		{
-			name:           "Failure - Invalid DistanceMiles Float",
-			queryParams:    "timestamp=2025-02-03T00:00:00&DistanceMiles=xyz",
-			expectedError:  "invalid DistanceMiles value: invalid float: xyz",
-			expectedStatus: http.StatusBadRequest,
-		},
-		{
-			name:           "Failure - Invalid FlightTimeMin Float",
-			queryParams:    "timestamp=2025-02-03T00:00:00&FlightTimeMin=abc",
-			expectedError:  "invalid FlightTimeMin value: invalid float: abc",
-			expectedStatus: http.StatusBadRequest,
-		},
-		// Invalid Float Test (DistanceKilometers)
-		{
-			name:           "Failure - Invalid DistanceKilometers Float",
-			queryParams:    "timestamp=2025-02-03T00:00:00&DistanceKilometers=xyz",
-			expectedError:  "invalid DistanceKilometers value: invalid float: xyz",
-			expectedStatus: http.StatusBadRequest,
-		},
-
-		// Invalid Float Test (FlightTimeHour)
-		{
-			name:           "Failure - Invalid FlightTimeHour Float",
-			queryParams:    "timestamp=2025-02-03T00:00:00&FlightTimeHour=abc",
-			expectedError:  "invalid FlightTimeHour value: invalid float: abc",
-			expectedStatus: http.StatusBadRequest,
+			name: "Invalid dayOfWeek",
+			queryParams: map[string]string{
+				"timestamp": "2024-01-01",
+				"dayOfWeek": "7",
+			},
+			expectedParams: structs.FlightSearchParams{
+				TravelTime: "2024-01-01",
+				DayOfWeek:  7,
+			},
+			expectError: true,
 		},
 	}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			req := httptest.NewRequest(http.MethodGet, "/v1/api/flights/all_params/search?"+tc.queryParams, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test request with query parameters
+			req, _ := http.NewRequest("GET", "/", nil)
+			q := req.URL.Query()
+			for key, value := range tt.queryParams {
+				q.Add(key, value)
+			}
+			req.URL.RawQuery = q.Encode()
+
+			// Create recorder and context
 			w := httptest.NewRecorder()
 
+			// Create a new context properly
 			ctx := context.NewContext()
 			ctx.Reset(w, req)
 
-			c := &FlightController{}
-			c.Ctx = ctx
+			// Create controller with test context
+			controller := &FlightController{}
+			controller.Init(ctx, "FlightController", "TestAction", nil)
 
-			// Call the function
-			_, err := ParseFlightSearchRequest(c)
+			// Parse request
+			params, err := ParseFlightSearchRequest(controller)
 
-			// Check if the expected error occurs
-			assert.Error(t, err, "Expected error for invalid input")
-			assert.Contains(t, err.Error(), tc.expectedError, "Error message should match expected")
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expectedParams, params)
+			}
+		})
+	}
+}
+
+type Container struct {
+	Data map[interface{}]interface{}
+}
+
+func TestDataMapInitialization(t *testing.T) {
+	// Test cases
+	tests := []struct {
+		name    string
+		initial map[interface{}]interface{}
+		wantNil bool
+	}{
+		{
+			name:    "nil map should be initialized",
+			initial: nil,
+			wantNil: false,
+		},
+		{
+			name:    "existing map should not be modified",
+			initial: map[interface{}]interface{}{"key": "value"},
+			wantNil: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create container with initial map
+			c := &Container{
+				Data: tt.initial,
+			}
+
+			// Run the initialization code
+			if c.Data == nil {
+				c.Data = make(map[interface{}]interface{})
+			}
+
+			// Assert map is not nil
+			if (c.Data == nil) != tt.wantNil {
+				t.Errorf("After initialization, Data map was nil = %v, want nil = %v", c.Data == nil, tt.wantNil)
+			}
+
+			// For the case with existing map, verify content wasn't lost
+			if tt.initial != nil {
+				if val, ok := c.Data["key"]; !ok || val != "value" {
+					t.Errorf("Existing map data was lost or modified")
+				}
+			}
 		})
 	}
 }

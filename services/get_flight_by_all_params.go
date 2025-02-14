@@ -60,46 +60,6 @@ func SearchFlights(params structs.FlightSearchParams) map[string]interface{} {
 	addGeoLocQuery(query, params.OriginLocationLat, params.OriginLocationLon)
 
 	return query
-
-	// res, err := utils.es.ExecuteSearch(query)
-	// res, err := esClient.ExecuteSearch(query)
-	// if err != nil {
-	// 	f.Data["json"] = map[string]string{"error": fmt.Sprintf("Failed to fetch flight details: %v", err)}
-	// 	f.ServeJSON()
-	// 	return
-	// }
-
-	// // Send response
-	// f.Data["json"] = res
-	// f.ServeJSON()
-
-	// // Convert query to JSON
-	// var buf bytes.Buffer
-	// if err := json.NewEncoder(&buf).Encode(query); err != nil {
-	// 	log.Fatalf("Error encoding query: %s", err)
-	// }
-
-	// // Perform search request
-	// req := esapi.SearchRequest{
-	// 	Index: []string{"kibana_sample_data_flights"},
-	// 	Body:  &buf,
-	// }
-
-	// // Use es.Client (the *elasticsearch.Client) to execute
-	// res, err := req.Do(context.Background(), es.Client)
-	// if err != nil {
-	// 	log.Fatalf("Error getting response: %s", err)
-	// }
-	// defer res.Body.Close()
-
-	// // Parse response
-	// var result map[string]interface{}
-	// if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-	// 	log.Fatalf("Error parsing the response body: %s", err)
-	// }
-
-	// jsonResult, _ := json.MarshalIndent(result, "", "  ")
-	// return string(jsonResult), nil
 }
 
 // Below are the helper functions for building the query:
